@@ -47,6 +47,18 @@ module Ddb #:nodoc:
           # Defaults to :deleted_by when compatibility mode is on
           class_attribute  :deleter_attribute
 
+          # What name should have creator association
+          # Default to :creator
+          class_attribute :creator_association
+
+          # What name should have updater association
+          # Default to :updater
+          class_attribute :updater_association
+
+          # What name should have deleter association
+          # Default to :deleter
+          class_attribute :deleter_association
+
           self.stampable
         end
       end
@@ -70,26 +82,32 @@ module Ddb #:nodoc:
                         :stamper_class_name => :user,
                         :creator_attribute  => Ddb::Userstamp.compatibility_mode ? :created_by : :creator_id,
                         :updater_attribute  => Ddb::Userstamp.compatibility_mode ? :updated_by : :updater_id,
-                        :deleter_attribute  => Ddb::Userstamp.compatibility_mode ? :deleted_by : :deleter_id
+                        :deleter_attribute  => Ddb::Userstamp.compatibility_mode ? :deleted_by : :deleter_id,
+                        :creator_association => :creator,
+                        :updater_association => :updater,
+                        :deleter_association => :deleter
                       }.merge(options)
 
           self.stamper_class_name = defaults[:stamper_class_name].to_sym
           self.creator_attribute  = defaults[:creator_attribute].to_sym
           self.updater_attribute  = defaults[:updater_attribute].to_sym
           self.deleter_attribute  = defaults[:deleter_attribute].to_sym
+          self.creator_association = defaults[:creator_association].to_sym
+          self.updater_association = defaults[:updater_association].to_sym
+          self.deleter_association = defaults[:deleter_association].to_sym
 
           class_eval do
-            belongs_to :creator, :class_name => self.stamper_class_name.to_s.singularize.camelize,
+            belongs_to self.creator_association.to_sym, :class_name => self.stamper_class_name.to_s.singularize.camelize,
                                  :foreign_key => self.creator_attribute
-                                 
-            belongs_to :updater, :class_name => self.stamper_class_name.to_s.singularize.camelize,
+
+            belongs_to self.updater_association.to_sym, :class_name => self.stamper_class_name.to_s.singularize.camelize,
                                  :foreign_key => self.updater_attribute
-                                 
+
             before_save     :set_updater_attribute
             before_create   :set_creator_attribute
-                                 
+
             if defined?(Caboose::Acts::Paranoid)
-              belongs_to :deleter, :class_name => self.stamper_class_name.to_s.singularize.camelize,
+              belongs_to self.deleter_association.to_sym, :class_name => self.stamper_class_name.to_s.singularize.camelize,
                                    :foreign_key => self.deleter_attribute
               before_destroy  :set_deleter_attribute
             end
